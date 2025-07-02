@@ -8,10 +8,8 @@ import os
 # Add parent directory's src folder to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from financial_data_providers import (
-    YahooFinanceProvider, 
-    MultiProviderFinancialData
-)
+from financial_data_providers import YahooFinanceProvider
+from test_provider_system import TestMultiProviderFinancialData
 
 def test_yahoo_finance():
     """Test Yahoo Finance provider directly"""
@@ -30,9 +28,9 @@ def test_yahoo_finance():
         return True
 
 def test_multi_provider_system():
-    """Test the multi-provider system"""
+    """Test the multi-provider system (with mock data for testing)"""
     print("\n🧪 Testing Multi-Provider System...")
-    system = MultiProviderFinancialData()
+    system = TestMultiProviderFinancialData()
     
     # Test provider status
     print("\n📋 Provider Status:")
@@ -52,9 +50,9 @@ def test_multi_provider_system():
         return True
 
 def test_multiple_stocks():
-    """Test with multiple different stocks"""
+    """Test with multiple different stocks (using test system with mock fallback)"""
     print("\n🧪 Testing Multiple Stocks...")
-    system = MultiProviderFinancialData()
+    system = TestMultiProviderFinancialData()
     
     test_stocks = ["MSFT", "GOOGL", "TSLA"]
     results = {}
@@ -72,6 +70,24 @@ def test_multiple_stocks():
     
     return results
 
+def test_production_system_no_mock():
+    """Test that production system never returns mock data"""
+    print("\n🧪 Testing Production System (No Mock Data)...")
+    from financial_data_providers import MultiProviderFinancialData
+    
+    system = MultiProviderFinancialData()
+    
+    # Check that mock provider is not included
+    provider_names = system.get_active_provider_names()
+    print(f"Production providers: {provider_names}")
+    
+    if "Mock Data Provider" in provider_names:
+        print("❌ Production system contains mock data provider!")
+        return False
+    else:
+        print("✅ Production system correctly excludes mock data")
+        return True
+
 def main():
     print("🚀 Financial Data Providers Test Suite")
     print("=" * 50)
@@ -85,11 +101,15 @@ def main():
     # Test multiple stocks
     stock_results = test_multiple_stocks()
     
+    # Test production system has no mock data
+    production_success = test_production_system_no_mock()
+    
     # Summary
     print("\n📊 Test Results Summary:")
     print("=" * 30)
     print(f"Yahoo Finance Direct: {'✅ PASS' if yahoo_success else '❌ FAIL'}")
     print(f"Multi-Provider System: {'✅ PASS' if multi_success else '❌ FAIL'}")
+    print(f"Production No Mock: {'✅ PASS' if production_success else '❌ FAIL'}")
     
     print("\nStock Tests:")
     for stock, success in stock_results.items():
@@ -97,7 +117,7 @@ def main():
     
     # Overall result
     all_stock_success = all(stock_results.values())
-    overall_success = yahoo_success and multi_success and all_stock_success
+    overall_success = yahoo_success and multi_success and all_stock_success and production_success
     
     print(f"\n🎯 Overall Result: {'✅ ALL TESTS PASSED' if overall_success else '❌ SOME TESTS FAILED'}")
     

@@ -98,12 +98,18 @@ print(result["final_analysis"])
 
 ## How It Works
 
-### **Multi-Provider Data System**
-The system automatically tries data sources in this order:
+### **Smart Multi-Provider Data System**
+The system intelligently includes only usable providers:
+
+**Default Setup (No API Keys Needed):**
 1. **Yahoo Finance** (Primary) - Unlimited requests, rich data
-2. **Polygon.io** (Backup) - If Yahoo fails and API key provided
-3. **Finnhub** (Backup) - If others fail and API key provided  
-4. **Alpha Vantage** (Final fallback) - If all else fails
+2. **Alpha Vantage** (Fallback) - Demo key available, 25 calls/day with API key
+3. **Graceful Error Handling** - Clear error messages if all providers fail
+
+**With Optional API Keys:**
+- **Polygon.io** - Added if `POLYGON_API_KEY` is configured (5 calls/min)
+- **Finnhub** - Added if `FINNHUB_API_KEY` is configured (60 calls/min)
+- **Alpha Vantage** - Added if `ALPHA_VANTAGE_API_KEY` is configured (25 calls/day)
 
 ### **AI Agent Architecture**
 1. **FinancialAnalysisAgent**: 
@@ -120,13 +126,20 @@ The system automatically tries data sources in this order:
    - Orchestrates multiple iterations of analysis and critique
    - Produces refined investment recommendations
 
-### **Rate Limits Comparison**
-| Provider | Free Tier Limit | Data Quality | API Key Required |
-|----------|----------------|--------------|------------------|
-| Yahoo Finance | ~Unlimited | ⭐⭐⭐⭐⭐ | ❌ No |
-| Polygon.io | 5/minute | ⭐⭐⭐⭐ | ✅ Yes |
-| Finnhub | 60/minute | ⭐⭐⭐⭐ | ✅ Yes |
-| Alpha Vantage | 25/day, 5/min | ⭐⭐⭐ | ✅ Yes |
+### **Provider Comparison**
+
+**🚀 Default Providers (Always Active):**
+| Provider | Rate Limit | Data Quality | Setup Required |
+|----------|------------|--------------|----------------|
+| Yahoo Finance | ~Unlimited | ⭐⭐⭐⭐⭐ | ❌ None |
+| Alpha Vantage | Demo key (limited) | ⭐⭐⭐ | ❌ None |
+
+**⚙️ Optional Providers (API Key Required):**
+| Provider | Rate Limit | Data Quality | Setup |
+|----------|------------|--------------|-------|
+| Polygon.io | 5/minute | ⭐⭐⭐⭐ | Add `POLYGON_API_KEY` |
+| Finnhub | 60/minute | ⭐⭐⭐⭐ | Add `FINNHUB_API_KEY` |
+| Alpha Vantage | 25/day | ⭐⭐⭐ | Add `ALPHA_VANTAGE_API_KEY` (enhances demo key) |
 
 ## Usage Examples
 
@@ -164,11 +177,12 @@ The system provides comprehensive analysis including:
 
 ## Benefits of Multi-Provider System
 
-### **Dramatically Better Rate Limits**
+### **Dramatically Better Experience**
 - **Before**: Limited to 25 requests/day with Alpha Vantage
-- **Now**: Virtually unlimited with Yahoo Finance primary source
-- **Reliability**: Automatic fallbacks ensure high availability
-- **No Setup Required**: Works immediately without any API keys
+- **Now**: Virtually unlimited with Yahoo Finance + instant setup
+- **Smart Providers**: Only uses providers that actually work (no wasted attempts)
+- **Zero Setup**: Works immediately - just run and go!
+- **Optional Scaling**: Add API keys only if you want additional providers
 
 ### **Enhanced Data Quality**
 - Company fundamentals (P/E ratio, market cap, dividend yield)
@@ -177,6 +191,12 @@ The system provides comprehensive analysis including:
 - Real-time pricing with comprehensive historical data
 
 This system gives you **enterprise-grade financial data access** for free! 🚀
+
+### **Production Safety & Error Handling**
+- **Real Data Only**: Never returns fake/mock data in production
+- **Clear Error Messages**: If all providers fail, you get helpful error messages (not fake data)
+- **Test Support**: Mock data available in `test_provider_system.py` for development only
+- **Transparent Failures**: Always know when you're getting real vs unavailable data
 
 ## Testing
 
@@ -203,6 +223,8 @@ python debug_yfinance.py
 
 The test suite verifies:
 - ✅ Yahoo Finance integration (fast_info and historical data)
-- ✅ Multi-provider fallback system
-- ✅ Mock data provider functionality
-- ✅ Error handling and rate limit management 
+- ✅ Multi-provider fallback system (with test-only mock data)
+- ✅ Production system excludes mock data (safety check)
+- ✅ Error handling and rate limit management
+
+**Note**: Tests use `tests/test_provider_system.py` and `tests/simple_fallback_provider.py` which include mock data for reliable testing. The production system (`src/financial_data_providers.py`) never includes mock data. 

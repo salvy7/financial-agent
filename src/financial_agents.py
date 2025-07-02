@@ -5,8 +5,7 @@ from typing import Dict, List
 import pandas as pd
 import time
 from datetime import datetime, timedelta
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.techindicators import TechIndicators
+# Alpha Vantage now handled by financial_data_providers.py
 import os
 from dotenv import load_dotenv
 from financial_data_providers import MultiProviderFinancialData
@@ -17,13 +16,8 @@ load_dotenv()
 class FinancialAnalysisAgent:
     def __init__(self, llm):
         self.llm = llm
-        # Initialize multi-provider system (primary: Yahoo Finance, fallbacks: Polygon, Finnhub)
+        # Initialize multi-provider system (Yahoo Finance, Polygon, Finnhub, Alpha Vantage)
         self.data_provider = MultiProviderFinancialData()
-        
-        # Keep Alpha Vantage as backup (if API key is provided)
-        self.api_key = os.getenv('ALPHA_VANTAGE_API_KEY', 'demo')
-        self.ts = TimeSeries(key=self.api_key, output_format='pandas')
-        self.ti = TechIndicators(key=self.api_key, output_format='pandas')
         
         self.tools = [
             Tool(
@@ -85,80 +79,12 @@ Thought: {agent_scratchpad}"""
 
     def get_financial_data(self, company_name: str) -> str:
         try:
-            # Try the multi-provider system first (Yahoo Finance, Polygon, Finnhub)
+            # Use the unified multi-provider system (includes Alpha Vantage if configured)
             result = self.data_provider.get_financial_data(company_name)
-            
-            if not result.startswith("Error:") and not result.startswith("All providers failed"):
-                return result
-            
-            # Fallback to Alpha Vantage if multi-provider fails
-            print(f"Multi-provider failed, falling back to Alpha Vantage: {result}")
-            return self._get_alpha_vantage_data(company_name)
+            return result
             
         except Exception as e:
             return f"Error fetching data for {company_name}: {str(e)}. Please try again later or check if the symbol is correct."
-    
-    def _get_alpha_vantage_data(self, company_name: str) -> str:
-        """Fallback method using Alpha Vantage API"""
-        try:
-            # Add delay to avoid rate limiting
-            time.sleep(1)
-            
-            # Get daily time series data
-            data, meta_data = self.ts.get_daily(symbol=company_name, outputsize='compact')
-            
-            if data.empty:
-                return f"Error: No data available for {company_name}. Please check if the symbol is correct."
-            
-            # Get technical indicators
-            try:
-                sma_20, _ = self.ti.get_sma(symbol=company_name, interval='daily', time_period=20)
-            except Exception as e:
-                sma_20 = pd.DataFrame()
-                print(f"Warning: Could not fetch SMA data: {str(e)}")
-            
-            try:
-                rsi, _ = self.ti.get_rsi(symbol=company_name, interval='daily', time_period=14)
-            except Exception as e:
-                rsi = pd.DataFrame()
-                print(f"Warning: Could not fetch RSI data: {str(e)}")
-            
-            # Format the response
-            response = f"Financial data for {company_name}:\n"
-            response += f"Data Source: Alpha Vantage (Fallback)\n\n"
-            
-            if not data.empty:
-                latest_data = data.iloc[0]
-                response += f"Latest Trading Data:\n"
-                response += f"Date: {latest_data.name.strftime('%Y-%m-%d')}\n"
-                response += f"Open: ${latest_data['1. open']:.2f}\n"
-                response += f"High: ${latest_data['2. high']:.2f}\n"
-                response += f"Low: ${latest_data['3. low']:.2f}\n"
-                response += f"Close: ${latest_data['4. close']:.2f}\n"
-                response += f"Volume: {latest_data['5. volume']:,.0f}\n"
-                
-                # Calculate price change
-                price_change = ((latest_data['4. close'] / data.iloc[-1]['4. close'] - 1) * 100)
-                response += f"Price Change: {price_change:.2f}%\n"
-                
-                # Add technical indicators if available
-                if not sma_20.empty:
-                    response += f"\nTechnical Indicators:\n"
-                    response += f"20-day SMA: ${sma_20.iloc[0]['SMA']:.2f}\n"
-                
-                if not rsi.empty:
-                    response += f"14-day RSI: {rsi.iloc[0]['RSI']:.2f}\n"
-                
-                # Add some basic statistics
-                response += f"\nPrice Statistics:\n"
-                response += f"Highest Price (20 days): ${data['2. high'].max():.2f}\n"
-                response += f"Lowest Price (20 days): ${data['3. low'].min():.2f}\n"
-                response += f"Average Volume: {data['5. volume'].mean():,.0f}\n"
-            
-            return response
-            
-        except Exception as e:
-            return f"Error fetching data for {company_name} from Alpha Vantage: {str(e)}. Please try again later or check if the symbol is correct."
 
     def calculate_metrics(self, data: str) -> str:
         try:
