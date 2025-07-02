@@ -9,6 +9,7 @@ from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 import os
 from dotenv import load_dotenv
+from financial_data_providers import MultiProviderFinancialData
 
 # Load environment variables
 load_dotenv()
@@ -16,8 +17,11 @@ load_dotenv()
 class FinancialAnalysisAgent:
     def __init__(self, llm):
         self.llm = llm
-        # Initialize Alpha Vantage with API key
-        self.api_key = os.getenv('ALPHA_VANTAGE_API_KEY', 'demo')  # Use demo key if none provided
+        # Initialize multi-provider system (primary: Yahoo Finance, fallbacks: Polygon, Finnhub)
+        self.data_provider = MultiProviderFinancialData()
+        
+        # Keep Alpha Vantage as backup (if API key is provided)
+        self.api_key = os.getenv('ALPHA_VANTAGE_API_KEY', 'demo')
         self.ts = TimeSeries(key=self.api_key, output_format='pandas')
         self.ti = TechIndicators(key=self.api_key, output_format='pandas')
         
@@ -25,12 +29,17 @@ class FinancialAnalysisAgent:
             Tool(
                 name="GetFinancialData",
                 func=self.get_financial_data,
-                description="Get financial data for a company using Alpha Vantage. Input should be just the stock symbol (e.g., AAPL, MSFT)"
+                description="Get financial data for a company using multiple sources (Yahoo Finance, Polygon, Finnhub). Input should be just the stock symbol (e.g., AAPL, MSFT)"
             ),
             Tool(
                 name="CalculateMetrics",
                 func=self.calculate_metrics,
                 description="Calculate financial metrics from the data. Input should be the data string from GetFinancialData"
+            ),
+            Tool(
+                name="CheckDataSources",
+                func=self.check_data_sources,
+                description="Check the status of all available financial data sources"
             )
         ]
         
@@ -76,6 +85,22 @@ Thought: {agent_scratchpad}"""
 
     def get_financial_data(self, company_name: str) -> str:
         try:
+            # Try the multi-provider system first (Yahoo Finance, Polygon, Finnhub)
+            result = self.data_provider.get_financial_data(company_name)
+            
+            if not result.startswith("Error:") and not result.startswith("All providers failed"):
+                return result
+            
+            # Fallback to Alpha Vantage if multi-provider fails
+            print(f"Multi-provider failed, falling back to Alpha Vantage: {result}")
+            return self._get_alpha_vantage_data(company_name)
+            
+        except Exception as e:
+            return f"Error fetching data for {company_name}: {str(e)}. Please try again later or check if the symbol is correct."
+    
+    def _get_alpha_vantage_data(self, company_name: str) -> str:
+        """Fallback method using Alpha Vantage API"""
+        try:
             # Add delay to avoid rate limiting
             time.sleep(1)
             
@@ -99,7 +124,8 @@ Thought: {agent_scratchpad}"""
                 print(f"Warning: Could not fetch RSI data: {str(e)}")
             
             # Format the response
-            response = f"Financial data for {company_name}:\n\n"
+            response = f"Financial data for {company_name}:\n"
+            response += f"Data Source: Alpha Vantage (Fallback)\n\n"
             
             if not data.empty:
                 latest_data = data.iloc[0]
@@ -132,7 +158,7 @@ Thought: {agent_scratchpad}"""
             return response
             
         except Exception as e:
-            return f"Error fetching data for {company_name}: {str(e)}. Please try again later or check if the symbol is correct."
+            return f"Error fetching data for {company_name} from Alpha Vantage: {str(e)}. Please try again later or check if the symbol is correct."
 
     def calculate_metrics(self, data: str) -> str:
         try:
@@ -140,6 +166,13 @@ Thought: {agent_scratchpad}"""
             return "Key metrics calculated successfully"
         except Exception as e:
             return f"Error calculating metrics: {str(e)}"
+    
+    def check_data_sources(self, _: str = "") -> str:
+        """Check the status of all available financial data sources"""
+        try:
+            return self.data_provider.get_provider_status()
+        except Exception as e:
+            return f"Error checking data sources: {str(e)}"
 
     def analyze(self, company_name: str) -> str:
         return self.executor.invoke({"company_name": company_name})["output"]
