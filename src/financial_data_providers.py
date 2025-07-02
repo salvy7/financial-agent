@@ -23,6 +23,148 @@ except ImportError:
 
 load_dotenv()
 
+class FinancialModelingPrepProvider:
+    """
+    Financial Modeling Prep (FMP) provider - 250 API calls per day free tier
+    Primary provider with excellent fundamentals data
+    """
+    
+    def __init__(self):
+        self.api_key = os.getenv('FMP_API_KEY', '')
+        self.base_url = "https://financialmodelingprep.com/api/v3"
+        self.name = "Financial Modeling Prep"
+        self.rate_limit = "250 calls/day (free)"
+    
+    def get_financial_data(self, symbol: str) -> str:
+        if not self.api_key:
+            return "Error: FMP_API_KEY not found in environment variables."
+        
+        try:
+            # Get quote data
+            quote_url = f"{self.base_url}/quote/{symbol}"
+            params = {"apikey": self.api_key}
+            
+            response = requests.get(quote_url, params=params)
+            if response.status_code != 200:
+                return f"Error: Failed to fetch quote data from FMP (Status: {response.status_code})"
+            
+            quote_data = response.json()
+            if not quote_data:
+                return f"Error: No quote data available for {symbol} from FMP"
+            
+            quote = quote_data[0]
+            
+            # Get company profile for additional info
+            profile_url = f"{self.base_url}/profile/{symbol}"
+            profile_response = requests.get(profile_url, params=params)
+            profile_data = {}
+            
+            if profile_response.status_code == 200:
+                profile_list = profile_response.json()
+                if profile_list:
+                    profile_data = profile_list[0]
+            
+            # Get key metrics for fundamentals
+            metrics_url = f"{self.base_url}/key-metrics/{symbol}"
+            metrics_response = requests.get(metrics_url, params=params)
+            metrics_data = {}
+            
+            if metrics_response.status_code == 200:
+                metrics_list = metrics_response.json()
+                if metrics_list:
+                    metrics_data = metrics_list[0]
+            
+            # Format the response
+            response_text = f"Financial Data for {symbol}:\n"
+            response_text += f"Data Source: {self.name} (Primary Provider)\n\n"
+            
+            # Company info
+            company_name = profile_data.get('companyName', symbol)
+            sector = profile_data.get('sector', 'N/A')
+            industry = profile_data.get('industry', 'N/A')
+            
+            response_text += f"Company: {company_name}\n"
+            response_text += f"Sector: {sector}\n"
+            response_text += f"Industry: {industry}\n\n"
+            
+            # Real-time quote data
+            response_text += f"Real-time Quote Data:\n"
+            response_text += f"Current Price: ${quote.get('price', 0):.2f}\n"
+            response_text += f"Change: ${quote.get('change', 0):.2f}\n"
+            response_text += f"Change %: {quote.get('changesPercentage', 0):.2f}%\n"
+            response_text += f"Day High: ${quote.get('dayHigh', 0):.2f}\n"
+            response_text += f"Day Low: ${quote.get('dayLow', 0):.2f}\n"
+            response_text += f"Open: ${quote.get('open', 0):.2f}\n"
+            response_text += f"Previous Close: ${quote.get('previousClose', 0):.2f}\n"
+            response_text += f"Volume: {quote.get('volume', 0):,.0f}\n"
+            response_text += f"Market Cap: ${quote.get('marketCap', 0):,.0f}\n"
+            
+            # 52-week range
+            year_high = quote.get('yearHigh', 0)
+            year_low = quote.get('yearLow', 0)
+            if year_high and year_low:
+                response_text += f"52-Week High: ${year_high:.2f}\n"
+                response_text += f"52-Week Low: ${year_low:.2f}\n"
+                if quote.get('price', 0) > 0:
+                    year_range_pct = ((year_high - year_low) / year_low) * 100
+                    response_text += f"52-Week Range: {year_range_pct:.1f}%\n"
+            
+            # Fundamental metrics
+            response_text += f"\nFundamental Metrics:\n"
+            
+            # P/E ratios
+            pe_ratio = quote.get('pe', 'N/A')
+            forward_pe = quote.get('forwardPE', 'N/A')
+            if pe_ratio and pe_ratio != 'N/A':
+                response_text += f"P/E Ratio: {pe_ratio:.2f}\n"
+            if forward_pe and forward_pe != 'N/A':
+                response_text += f"Forward P/E: {forward_pe:.2f}\n"
+            
+            # Dividend info
+            dividend = quote.get('dividend', 0)
+            dividend_yield = quote.get('dividendYield', 0)
+            if dividend and dividend > 0:
+                response_text += f"Dividend: ${dividend:.2f}\n"
+            if dividend_yield and dividend_yield > 0:
+                response_text += f"Dividend Yield: {dividend_yield:.2f}%\n"
+            
+            # Additional metrics from key metrics endpoint
+            if metrics_data:
+                response_text += f"\nAdditional Metrics:\n"
+                
+                # ROE and ROA
+                roe = metrics_data.get('roe', 'N/A')
+                roa = metrics_data.get('roa', 'N/A')
+                if roe and roe != 'N/A':
+                    response_text += f"Return on Equity: {roe:.2f}%\n"
+                if roa and roa != 'N/A':
+                    response_text += f"Return on Assets: {roa:.2f}%\n"
+                
+                # Debt metrics
+                debt_to_equity = metrics_data.get('debtToEquity', 'N/A')
+                if debt_to_equity and debt_to_equity != 'N/A':
+                    response_text += f"Debt-to-Equity: {debt_to_equity:.2f}\n"
+                
+                # Current ratio
+                current_ratio = metrics_data.get('currentRatio', 'N/A')
+                if current_ratio and current_ratio != 'N/A':
+                    response_text += f"Current Ratio: {current_ratio:.2f}\n"
+            
+            # Beta
+            beta = quote.get('beta', 'N/A')
+            if beta and beta != 'N/A':
+                response_text += f"Beta: {beta:.2f}\n"
+            
+            # Average volume
+            avg_volume = quote.get('avgVolume', 0)
+            if avg_volume:
+                response_text += f"Average Volume: {avg_volume:,.0f}\n"
+            
+            return response_text
+            
+        except Exception as e:
+            return f"Error fetching data from Financial Modeling Prep: {str(e)}"
+
 class YahooFinanceProvider:
     """
     Yahoo Finance provider - Most reliable, virtually unlimited requests
@@ -395,6 +537,11 @@ class MultiProviderFinancialData:
     def __init__(self):
         self.providers = []
         
+        # Include FMP as primary provider if API key is available
+        fmp_key = os.getenv('FMP_API_KEY', '')
+        if fmp_key:
+            self.providers.append(FinancialModelingPrepProvider())
+        
         # Always include Yahoo Finance (no API key required)
         self.providers.append(YahooFinanceProvider())
         
@@ -490,10 +637,13 @@ Note: This system never returns fake/mock data in production."""
         
         # Show excluded providers
         excluded = []
+        fmp_key = os.getenv('FMP_API_KEY', '')
         polygon_key = os.getenv('POLYGON_API_KEY', '')
         finnhub_key = os.getenv('FINNHUB_API_KEY', '')
         alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY', '')
         
+        if not fmp_key:
+            excluded.append("Financial Modeling Prep (No API key)")
         if not polygon_key:
             excluded.append("Polygon.io (No API key)")
         if not finnhub_key:
