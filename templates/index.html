@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Analysis System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Financial Analysis System</h1>
+                
+                <div id="chat-container" class="space-y-4 mb-6 h-[500px] overflow-y-auto">
+                    <!-- Analysis messages will be added here -->
+                </div>
+
+                <form id="analysis-form" class="flex gap-4">
+                    <input type="text" 
+                           id="company-input" 
+                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter company name or ticker (e.g., AAPL)"
+                           required>
+                    <button type="submit" 
+                            class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                        Analyze
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const analysisForm = document.getElementById('analysis-form');
+        const companyInput = document.getElementById('company-input');
+
+        function addMessage(content, type = 'analysis') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'mb-4';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = `p-4 rounded-lg ${
+                type === 'analysis' ? 'bg-blue-100 text-blue-800' :
+                type === 'critique' ? 'bg-red-100 text-red-800' :
+                'bg-green-100 text-green-800'
+            }`;
+            
+            const pre = document.createElement('pre');
+            pre.className = 'whitespace-pre-wrap';
+            pre.textContent = content;
+            
+            messageContent.appendChild(pre);
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        analysisForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const companyName = companyInput.value.trim();
+            if (!companyName) return;
+
+            // Clear previous messages
+            chatContainer.innerHTML = '';
+            
+            // Add initial message
+            addMessage(`Starting analysis for ${companyName}...`, 'analysis');
+            companyInput.value = '';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `company_name=${encodeURIComponent(companyName)}`
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Display analysis history
+                    data.data.history.forEach(item => {
+                        addMessage(item.content, item.type);
+                    });
+                    
+                    // Display final analysis
+                    addMessage('Final Analysis:\n' + data.data.final_analysis, 'analysis');
+                } else {
+                    addMessage('Error: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addMessage('Sorry, I encountered an error. Please try again.', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 
