@@ -19,21 +19,35 @@ class FinancialAnalysisAgent:
         # Initialize multi-provider system (Yahoo Finance, Polygon, Finnhub, Alpha Vantage)
         self.data_provider = MultiProviderFinancialData()
         
+        # Initialize cache for financial data
+        self.data_cache = {}
+        self.cache_duration = 3000  # 5 minutes in seconds
+        
         self.tools = [
             Tool(
                 name="GetFinancialData",
                 func=self.get_financial_data,
-                description="Get financial data for a company using multiple sources (Yahoo Finance, Polygon, Finnhub). Input should be just the stock symbol (e.g., AAPL, MSFT)"
+                description="Get financial data for a company using multiple sources (Yahoo Finance, Polygon, Finnhub). Input should be just the stock symbol (e.g., AAPL, MSFT). Data is cached for 5 minutes to reduce API calls."
             ),
-            Tool(
-                name="CalculateMetrics",
-                func=self.calculate_metrics,
-                description="Calculate financial metrics from the data. Input should be the data string from GetFinancialData"
-            ),
+            # Tool(
+            #     name="CalculateMetrics",
+            #     func=self.calculate_metrics,
+            #     description="Calculate financial metrics from the data. Input should be the data string from GetFinancialData"
+            # ),
             Tool(
                 name="CheckDataSources",
                 func=self.check_data_sources,
                 description="Check the status of all available financial data sources"
+            ),
+            Tool(
+                name="GetCacheStatus",
+                func=self.get_cache_status,
+                description="Get cache status and statistics for financial data. Shows cached symbols and their age."
+            ),
+            Tool(
+                name="ClearCache",
+                func=self.clear_cache,
+                description="Clear all cached financial data to force fresh API calls on next request."
             )
         ]
         
@@ -79,8 +93,30 @@ Thought: {agent_scratchpad}"""
 
     def get_financial_data(self, company_name: str) -> str:
         try:
-            # Use the unified multi-provider system (includes Alpha Vantage if configured)
-            result = self.data_provider.get_financial_data(company_name)
+            # Normalize the symbol (uppercase)
+            symbol = company_name.upper()
+            current_time = time.time()
+            
+            # Check if data is in cache and not expired
+            if symbol in self.data_cache:
+                cached_data, cache_time = self.data_cache[symbol]
+                if current_time - cache_time < self.cache_duration:
+                    print(f"📋 Returning cached data for {symbol} (age: {int(current_time - cache_time)}s)")
+                    return cached_data
+                else:
+                    # Remove expired cache entry
+                    del self.data_cache[symbol]
+                    print(f"🗑️  Cache expired for {symbol}, fetching fresh data")
+            
+            # Fetch fresh data from provider
+            print(f"🔄 Fetching fresh data for {symbol}")
+            result = self.data_provider.get_financial_data(symbol)
+            
+            # Cache the result if it's not an error
+            if not result.startswith("Error:"):
+                self.data_cache[symbol] = (result, current_time)
+                print(f"💾 Cached data for {symbol}")
+            
             return result
             
         except Exception as e:
@@ -99,6 +135,50 @@ Thought: {agent_scratchpad}"""
             return self.data_provider.get_provider_status()
         except Exception as e:
             return f"Error checking data sources: {str(e)}"
+    
+    def get_cache_status(self, _: str = "") -> str:
+        """Get cache status and statistics"""
+        try:
+            current_time = time.time()
+            active_cache = {}
+            expired_count = 0
+            
+            for symbol, (data, cache_time) in self.data_cache.items():
+                if current_time - cache_time < self.cache_duration:
+                    age = int(current_time - cache_time)
+                    active_cache[symbol] = age
+                else:
+                    expired_count += 1
+            
+            # Clean up expired entries
+            if expired_count > 0:
+                self.data_cache = {k: v for k, v in self.data_cache.items() 
+                                 if current_time - v[1] < self.cache_duration}
+            
+            status = f"📋 Financial Data Cache Status:\n"
+            status += f"Cache Duration: {self.cache_duration} seconds ({self.cache_duration//60} minutes)\n"
+            status += f"Active Cached Symbols: {len(active_cache)}\n"
+            status += f"Expired Entries Cleaned: {expired_count}\n\n"
+            
+            if active_cache:
+                status += "Cached Symbols:\n"
+                for symbol, age in active_cache.items():
+                    status += f"  • {symbol}: {age}s old\n"
+            else:
+                status += "No active cached data\n"
+            
+            return status
+        except Exception as e:
+            return f"Error checking cache status: {str(e)}"
+    
+    def clear_cache(self, _: str = "") -> str:
+        """Clear all cached financial data"""
+        try:
+            cache_size = len(self.data_cache)
+            self.data_cache.clear()
+            return f"🗑️  Cache cleared. Removed {cache_size} cached entries."
+        except Exception as e:
+            return f"Error clearing cache: {str(e)}"
 
     def analyze(self, company_name: str) -> str:
         return self.executor.invoke({"company_name": company_name})["output"]
@@ -119,7 +199,7 @@ Provide your critique in the following format:
 4. Alternative Perspectives
 5. Recommendations for Improvement
 
-Be thorough and constructive in your criticism."""
+Be concise and and prescriptive in your criticism."""
         )
 
     def critique(self, analysis: str) -> str:
@@ -128,7 +208,7 @@ Be thorough and constructive in your criticism."""
 class FinancialAnalysisSystem:
     def __init__(self, iterations: int = 2):
         self.llm = Ollama(
-            model="mistral",
+            model="llama3.1:8b",
             temperature=0.7,
             base_url="http://localhost:11434"
         )

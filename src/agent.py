@@ -40,9 +40,9 @@ tools = [
     )
 ]
 
-# Create the LLM using Ollama with Mistral model
+# Create the LLM using Ollama with Llama 3.1 model
 llm = Ollama(
-    model="mistral",
+    model="llama3.1:8b",
     temperature=0.7,
     base_url="http://localhost:11434"
 )
@@ -82,7 +82,7 @@ agent_executor = AgentExecutor.from_agent_and_tools(
 
 def main():
     print("Local AI Agent is ready! Type 'exit' to quit.")
-    print("Note: Make sure Ollama is running with the Mistral model installed.")
+    print("Note: Make sure Ollama is running with the Llama 3.1 model installed.")
     while True:
         user_input = input("\nYour question: ")
         if user_input.lower() == 'exit':
