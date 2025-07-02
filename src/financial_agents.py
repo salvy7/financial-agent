@@ -71,11 +71,10 @@ Final Answer: the final answer to the original input question
 
 Important Instructions:
 1. For GetFinancialData, only input the stock symbol (e.g., AAPL, MSFT)
-2. For CalculateMetrics, use the data string from GetFinancialData
-3. Do not try to use any other tools or methods
-4. Keep your analysis focused on the data you receive
-5. Always follow the format exactly as shown above
-6. If you encounter an error, explain it in the Observation and continue with your analysis
+2. Do not try to use any other tools or methods
+3. Keep your analysis focused on the data you receive
+4. Always follow the format exactly as shown above
+5. If you encounter an error, explain it in the Observation and continue with your analysis
 
 Begin!
 

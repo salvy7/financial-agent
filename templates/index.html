@@ -3,31 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Analysis System</title>
+    <title>Interactive Financial Analysis System</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-6xl mx-auto">
             <div class="bg-white rounded-lg shadow-lg p-6">
-                <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Financial Analysis System</h1>
+                <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Interactive Financial Analysis System</h1>
                 
-                <div id="chat-container" class="space-y-4 mb-6 h-[500px] overflow-y-auto">
-                    <!-- Analysis messages will be added here -->
+                <!-- Analysis Controls -->
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                    <h2 class="text-lg font-semibold mb-3">Start New Analysis</h2>
+                    <form id="analysis-form" class="flex gap-4">
+                        <input type="text" 
+                               id="company-input" 
+                               class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Enter company name or ticker (e.g., AAPL)"
+                               required>
+                        <button type="submit" 
+                                class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            Start Analysis
+                        </button>
+                    </form>
                 </div>
 
-                <form id="analysis-form" class="flex gap-4">
-                    <input type="text" 
-                           id="company-input" 
-                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="Enter company name or ticker (e.g., AAPL)"
-                           required>
-                    <button type="submit" 
-                            class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
-                        Analyze
+                <!-- Conversation Container -->
+                <div id="chat-container" class="space-y-4 mb-6 h-[600px] overflow-y-auto border border-gray-200 rounded-lg p-4">
+                    <div class="text-center text-gray-500">
+                        Start a new analysis or continue the conversation below
+                    </div>
+                </div>
+
+                <!-- Interactive Feedback Section -->
+                <div id="feedback-section" class="hidden mb-6 p-4 bg-green-50 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-3">Provide Feedback & Guidance</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Quick Feedback Options:</label>
+                            <div class="space-y-2">
+                                <button class="feedback-btn w-full text-left p-2 bg-white border border-gray-300 rounded hover:bg-gray-50" 
+                                        data-feedback="Focus more on technical analysis">
+                                    🔍 Focus more on technical analysis
+                                </button>
+                                <button class="feedback-btn w-full text-left p-2 bg-white border border-gray-300 rounded hover:bg-gray-50" 
+                                        data-feedback="Include more fundamental metrics">
+                                    📊 Include more fundamental metrics
+                                </button>
+                                <button class="feedback-btn w-full text-left p-2 bg-white border border-gray-300 rounded hover:bg-gray-50" 
+                                        data-feedback="Provide more specific investment recommendations">
+                                    💡 Provide more specific investment recommendations
+                                </button>
+                                <button class="feedback-btn w-full text-left p-2 bg-white border border-gray-300 rounded hover:bg-gray-50" 
+                                        data-feedback="Analyze risk factors more thoroughly">
+                                    ⚠️ Analyze risk factors more thoroughly
+                                </button>
+                                <button class="feedback-btn w-full text-left p-2 bg-white border border-gray-300 rounded hover:bg-gray-50" 
+                                        data-feedback="Compare with competitors">
+                                    🏆 Compare with competitors
+                                </button>
+                                <button class="critique-btn w-full text-left p-2 bg-red-50 border border-red-300 rounded hover:bg-red-100 text-red-700" 
+                                        data-action="run-critique">
+                                    🔍 Run Critique Analysis
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Custom Guidance:</label>
+                            <textarea id="custom-feedback" 
+                                      class="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Provide specific guidance or ask questions to improve the analysis..."></textarea>
+                            <button id="send-custom-feedback" 
+                                    class="mt-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                                Send Custom Feedback
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversation Input -->
+                <div id="conversation-input" class="hidden">
+                    <form id="conversation-form" class="flex gap-4">
+                        <input type="text" 
+                               id="user-input" 
+                               class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Ask questions, provide feedback, or request specific analysis..."
+                               required>
+                        <button type="submit" 
+                                class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                            Send
+                        </button>
+                    </form>
+                </div>
+
+                <!-- System Controls -->
+                <div class="mt-6 flex gap-4 justify-center">
+                    <button id="clear-chat" 
+                            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                        Clear Chat
                     </button>
-                </form>
+                    <button id="show-cache-status" 
+                            class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors">
+                        Cache Status
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -36,8 +116,19 @@
         const chatContainer = document.getElementById('chat-container');
         const analysisForm = document.getElementById('analysis-form');
         const companyInput = document.getElementById('company-input');
+        const feedbackSection = document.getElementById('feedback-section');
+        const conversationInput = document.getElementById('conversation-input');
+        const conversationForm = document.getElementById('conversation-form');
+        const userInput = document.getElementById('user-input');
+        const customFeedback = document.getElementById('custom-feedback');
+        const sendCustomFeedback = document.getElementById('send-custom-feedback');
+        const clearChatBtn = document.getElementById('clear-chat');
+        const showCacheStatusBtn = document.getElementById('show-cache-status');
 
-        function addMessage(content, type = 'analysis') {
+        let currentCompany = null;
+        let conversationHistory = [];
+
+        function addMessage(content, type = 'analysis', isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'mb-4';
             
@@ -45,7 +136,9 @@
             messageContent.className = `p-4 rounded-lg ${
                 type === 'analysis' ? 'bg-blue-100 text-blue-800' :
                 type === 'critique' ? 'bg-red-100 text-red-800' :
-                'bg-green-100 text-green-800'
+                type === 'user' ? 'bg-green-100 text-green-800 ml-8' :
+                type === 'system' ? 'bg-gray-100 text-gray-800' :
+                'bg-yellow-100 text-yellow-800'
             }`;
             
             const pre = document.createElement('pre');
@@ -58,6 +151,17 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
+        function showFeedbackSection() {
+            feedbackSection.classList.remove('hidden');
+            conversationInput.classList.remove('hidden');
+        }
+
+        function hideFeedbackSection() {
+            feedbackSection.classList.add('hidden');
+            conversationInput.classList.add('hidden');
+        }
+
+        // Analysis form submission
         analysisForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const companyName = companyInput.value.trim();
@@ -65,9 +169,28 @@
 
             // Clear previous messages
             chatContainer.innerHTML = '';
+            conversationHistory = [];
+            currentCompany = companyName;
             
-            // Add initial message
-            addMessage(`Starting analysis for ${companyName}...`, 'analysis');
+            // Add initial status message with progress indicators
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'mb-4';
+            statusDiv.innerHTML = `
+                <div class="p-4 rounded-lg bg-blue-100 text-blue-800 border-l-4 border-blue-500">
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                        <strong>📊 Financial Analysis in Progress...</strong>
+                    </div>
+                    <div class="mt-2 text-sm">
+                        <p>• Fetching real-time financial data from multiple sources</p>
+                        <p>• Analyzing key metrics and technical indicators</p>
+                        <p>• Generating comprehensive investment recommendations</p>
+                        <p>• Assessing risk factors and market conditions</p>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(statusDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
             companyInput.value = '';
 
             try {
@@ -79,16 +202,288 @@
                     body: `company_name=${encodeURIComponent(companyName)}`
                 });
 
+                // Remove the status message
+                statusDiv.remove();
+
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    // Add success message
+                    addMessage('✅ Financial Analysis Complete!', 'system');
+                    
                     // Display analysis history
                     data.data.history.forEach(item => {
                         addMessage(item.content, item.type);
+                        conversationHistory.push({ role: 'assistant', content: item.content });
                     });
                     
-                    // Display final analysis
-                    addMessage('Final Analysis:\n' + data.data.final_analysis, 'analysis');
+                    // Display final analysis with better formatting
+                    const analysisDiv = document.createElement('div');
+                    analysisDiv.className = 'mb-4';
+                    analysisDiv.innerHTML = `
+                        <div class="p-4 rounded-lg bg-blue-100 text-blue-800 border-l-4 border-blue-500">
+                            <div class="font-bold mb-2">📊 Financial Analysis Results:</div>
+                            <pre class="whitespace-pre-wrap text-sm">${data.data.final_analysis}</pre>
+                        </div>
+                    `;
+                    chatContainer.appendChild(analysisDiv);
+                    conversationHistory.push({ role: 'assistant', content: data.data.final_analysis });
+                    
+                    // Show feedback section
+                    showFeedbackSection();
+                } else {
+                    addMessage('Error: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addMessage('Sorry, I encountered an error. Please try again.', 'error');
+            }
+        });
+
+        // Quick feedback buttons
+        document.querySelectorAll('.feedback-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const feedback = btn.dataset.feedback;
+                await sendFeedback(feedback);
+            });
+        });
+
+        // Critique button
+        document.querySelectorAll('.critique-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const action = btn.dataset.action;
+                if (action === 'run-critique') {
+                    await runCritiqueAnalysis();
+                }
+            });
+        });
+
+        // Custom feedback submission
+        sendCustomFeedback.addEventListener('click', async () => {
+            const feedback = customFeedback.value.trim();
+            if (feedback) {
+                await sendFeedback(feedback);
+                customFeedback.value = '';
+            }
+        });
+
+        // Conversation form submission
+        conversationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMessage = userInput.value.trim();
+            if (!userMessage) return;
+
+            addMessage(userMessage, 'user', true);
+            conversationHistory.push({ role: 'user', content: userMessage });
+            userInput.value = '';
+
+            try {
+                const response = await fetch('/conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        company_name: currentCompany,
+                        message: userMessage,
+                        history: conversationHistory
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    addMessage(data.response, 'analysis');
+                    conversationHistory.push({ role: 'assistant', content: data.response });
+                } else {
+                    addMessage('Error: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addMessage('Sorry, I encountered an error. Please try again.', 'error');
+            }
+        });
+
+        async function sendFeedback(feedback) {
+            addMessage(`User Feedback: ${feedback}`, 'user', true);
+            conversationHistory.push({ role: 'user', content: feedback });
+
+            // Add processing status
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'mb-4';
+            statusDiv.innerHTML = `
+                <div class="p-4 rounded-lg bg-green-100 text-green-800 border-l-4 border-green-500">
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                        <strong>💬 Processing Feedback...</strong>
+                    </div>
+                    <div class="mt-2 text-sm">
+                        <p>• Analyzing your feedback and guidance</p>
+                        <p>• Incorporating your preferences into the analysis</p>
+                        <p>• Generating improved recommendations</p>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(statusDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                const response = await fetch('/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        company_name: currentCompany,
+                        feedback: feedback,
+                        history: conversationHistory
+                    })
+                });
+
+                // Remove status message
+                statusDiv.remove();
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Add feedback response with better formatting
+                    const responseDiv = document.createElement('div');
+                    responseDiv.className = 'mb-4';
+                    responseDiv.innerHTML = `
+                        <div class="p-4 rounded-lg bg-green-100 text-green-800 border-l-4 border-green-500">
+                            <div class="font-bold mb-2">💬 Feedback Response:</div>
+                            <pre class="whitespace-pre-wrap text-sm">${data.response}</pre>
+                        </div>
+                    `;
+                    chatContainer.appendChild(responseDiv);
+                    conversationHistory.push({ role: 'assistant', content: data.response });
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    addMessage('❌ Feedback Error: ' + data.message, 'error');
+                }
+            } catch (error) {
+                // Remove status message
+                statusDiv.remove();
+                addMessage('❌ Feedback Error: Please try again.', 'error');
+            }
+        }
+
+        async function runCritiqueAnalysis() {
+            // Add initial status message
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'mb-4';
+            statusDiv.innerHTML = `
+                <div class="p-4 rounded-lg bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500">
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600 mr-2"></div>
+                        <strong>🔍 Critique Analysis in Progress...</strong>
+                    </div>
+                    <div class="mt-2 text-sm">
+                        <p>• Analyzing the current financial analysis for potential biases and gaps</p>
+                        <p>• Identifying missing information and alternative perspectives</p>
+                        <p>• Generating recommendations for improvement</p>
+                        <p>• Creating an enhanced analysis based on critique findings</p>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(statusDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            try {
+                const response = await fetch('/critique', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        company_name: currentCompany,
+                        history: conversationHistory
+                    })
+                });
+
+                // Remove the status message
+                statusDiv.remove();
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Add critique summary
+                    addMessage('✅ Critique Analysis Complete!', 'system');
+                    
+                    // Add critique with better formatting
+                    const critiqueDiv = document.createElement('div');
+                    critiqueDiv.className = 'mb-4';
+                    critiqueDiv.innerHTML = `
+                        <div class="p-4 rounded-lg bg-red-100 text-red-800 border-l-4 border-red-500">
+                            <div class="font-bold mb-2">🔍 Critique Analysis Results:</div>
+                            <pre class="whitespace-pre-wrap text-sm">${data.critique}</pre>
+                        </div>
+                    `;
+                    chatContainer.appendChild(critiqueDiv);
+                    conversationHistory.push({ role: 'assistant', content: data.critique });
+                    
+                    // Show improved analysis option with better UI
+                    if (data.improved_analysis) {
+                        const improvedSection = document.createElement('div');
+                        improvedSection.className = 'mb-4 p-4 bg-green-50 rounded-lg border border-green-200';
+                        improvedSection.innerHTML = `
+                            <div class="font-semibold text-green-800 mb-2">✨ Enhanced Analysis Available</div>
+                            <p class="text-sm text-green-700 mb-3">
+                                Based on the critique findings, an improved analysis has been generated that addresses the identified issues and incorporates alternative perspectives.
+                            </p>
+                            <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">
+                                Show Enhanced Analysis
+                            </button>
+                        `;
+                        
+                        const showBtn = improvedSection.querySelector('button');
+                        showBtn.onclick = () => {
+                            // Remove the button section
+                            improvedSection.remove();
+                            
+                            // Show the improved analysis
+                            const analysisDiv = document.createElement('div');
+                            analysisDiv.className = 'mb-4';
+                            analysisDiv.innerHTML = `
+                                <div class="p-4 rounded-lg bg-blue-100 text-blue-800 border-l-4 border-blue-500">
+                                    <div class="font-bold mb-2">✨ Enhanced Analysis:</div>
+                                    <pre class="whitespace-pre-wrap text-sm">${data.improved_analysis}</pre>
+                                </div>
+                            `;
+                            chatContainer.appendChild(analysisDiv);
+                            conversationHistory.push({ role: 'assistant', content: data.improved_analysis });
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        };
+                        
+                        chatContainer.appendChild(improvedSection);
+                    }
+                    
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    addMessage('❌ Critique Analysis Failed: ' + data.message, 'error');
+                }
+            } catch (error) {
+                // Remove the status message
+                statusDiv.remove();
+                addMessage('❌ Critique Analysis Error: Please try again.', 'error');
+            }
+        }
+
+        // Clear chat
+        clearChatBtn.addEventListener('click', () => {
+            chatContainer.innerHTML = '';
+            conversationHistory = [];
+            currentCompany = null;
+            hideFeedbackSection();
+            addMessage('Chat cleared. Start a new analysis above.', 'system');
+        });
+
+        // Show cache status
+        showCacheStatusBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/cache-status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    addMessage(data.status_text, 'system');
                 } else {
                     addMessage('Error: ' + data.message, 'error');
                 }
